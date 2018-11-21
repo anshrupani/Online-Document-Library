@@ -5,6 +5,8 @@ services:
              container_name: nginx
              volumes:
                   - ./nginx/www/:/var/www/nginx
+             ports:
+                  - "8080:80"
              networks:
                   - se_backend
 networks:
