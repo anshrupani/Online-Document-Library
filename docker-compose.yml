@@ -1,6 +1,12 @@
 version: '2'
 services:
         nginx:
+             build: ./nginx/
+             container_name: nginx
+             volumes:
+                  - ./nginx/www/:/var/www/nginx
+             networks:
+                  - se_backend
         grproxy:
         hbase:
         gserve1:
