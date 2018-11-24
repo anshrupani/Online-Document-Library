@@ -9,6 +9,19 @@ services:
                   - "8080:80"
              networks:
                   - se_backend
+        hbase:
+             build: ./hbase/
+             container_name: hbase
+             ports:
+                  - 2181:2181
+                  - 8085:8085
+                  - 9095:9095
+                  - 16010:16010
+                  - 16301:16301
+             networks:
+                se_backend:
+                  aliases:
+                    - zookeeper
 networks:
      se_backend:
         driver: bridge
