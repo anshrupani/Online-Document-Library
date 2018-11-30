@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log"
 	"bytes"
+        "os"
 )
 
 
@@ -82,5 +83,7 @@ func handlerForPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer responsePost.Body.Close()
-	} 
+	}
+        var serverName string = os.Getenv("servername")
+        fmt.Fprintf(w, "proudly served by %s", serverName)
 }
