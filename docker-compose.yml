@@ -9,7 +9,10 @@ services:
                   - se_backend
         grproxy:
              depends_on:
-             - nginx
+                  - nginx
+                  - hbase
+                  - gserve1
+                  - gserve2
              build: ./grproxy/
              container_name: grproxy
              ports: 
@@ -41,10 +44,6 @@ services:
              ports:
                   - 2181:2181
                   - 8080:8080
-                  - 8085:8085
-                  - 9095:9095
-                  - 16010:16010
-                  - 16301:16301
              networks:
                 se_backend:
                   aliases:
