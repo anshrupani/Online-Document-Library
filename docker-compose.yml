@@ -6,7 +6,7 @@ services:
              volumes:
                   - ./nginx/www/:/var/www/nginx
              ports:
-                  - "8080:80"
+                  - "9091:80"
              networks:
                   - se_backend
         hbase:
@@ -14,6 +14,7 @@ services:
              container_name: hbase
              ports:
                   - 2181:2181
+                  - 8080:8080
                   - 8085:8085
                   - 9095:9095
                   - 16010:16010
