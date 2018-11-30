@@ -5,8 +5,6 @@ services:
              container_name: nginx
              volumes:
                   - ./nginx/www/:/var/www/nginx
-             ports:
-                  - "9091:80"
              networks:
                   - se_backend
         grproxy:
@@ -15,10 +13,28 @@ services:
              build: ./grproxy/
              container_name: grproxy
              ports: 
-                  - 9090:9090
+                  - 80:9090
              networks:
                   - se_frontend
                   - se_backend
+        gserve1:
+             depends_on:
+                  - hbase
+             build: ./gserve/
+             container_name: gserve1
+             environment:
+                  - servername=gserve1
+             networks:
+                  - se_backend
+        gserve2:
+             depends_on:
+                  - hbase
+             build: ./gserve/
+             container_name: gserve2
+             environment:
+                  - servername=gserve2
+             networks:
+                  - se_backend   
         hbase:
              build: ./hbase/
              container_name: hbase
@@ -32,7 +48,7 @@ services:
              networks:
                 se_backend:
                   aliases:
-                    - zookeeper
+                    - zookeeper       
 networks:
      se_backend:
         driver: bridge

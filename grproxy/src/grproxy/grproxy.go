@@ -32,11 +32,11 @@ func main() {
         proxies := reverseProxyRedirect([]*url.URL{
                 {
                         Scheme: "http",
-                        Host:   "localhost:9094",
+                        Host:   "gserve1:9094",
                 },
                 {
                         Scheme: "http",
-                        Host:   "localhost:9092",
+                        Host:   "gserve2:9094",
                 },
         })
         log.Fatal(http.ListenAndServe(":9090", proxies))

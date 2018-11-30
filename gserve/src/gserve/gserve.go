@@ -9,6 +9,7 @@ import (
 	"bytes"
 )
 
+
 func main() {
 	//handle requests with "/library" path
 	http.HandleFunc("/library", handlerForPath)
@@ -46,7 +47,7 @@ func handlerForPath(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 	r.Header.Set("Accept", "application/json")
 	//set url for interacting with rest api to read data
-	urlrest1 := "http://localhost:8080/se2:library/*"
+	urlrest1 := "http://" + "hbase" + ":8080/se2:library/*"
 	readReq, _ := http.NewRequest("GET", urlrest1, nil)
 	readReq.Header.Set("Accept", "application/json")
 	client := &http.Client{}
@@ -74,7 +75,7 @@ func handlerForPath(w http.ResponseWriter, r *http.Request) {
 	encodedJsonData := stringencoder(encodedData)
 	r.Header.Set("Content-type", "application/json")
 	//set url for interacting with rest api to write data
-	urlrest2 := "http://localhost:8080/se2:library/fakerow"
+	urlrest2 := "http://" + "hbase" + ":8080/se2:library/fakerow"
 	responsePost, errrrr := http.Post(urlrest2, "application/json", bytes.NewBuffer([]byte(encodedJsonData)))
 	if errrrr != nil {
 		fmt.Println("Error: %+v", errrrr)
