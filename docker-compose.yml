@@ -9,6 +9,16 @@ services:
                   - "9091:80"
              networks:
                   - se_backend
+        grproxy:
+             depends_on:
+             - nginx
+             build: ./grproxy/
+             container_name: grproxy
+             ports: 
+                  - 9090:9090
+             networks:
+                  - se_frontend
+                  - se_backend
         hbase:
              build: ./hbase/
              container_name: hbase
@@ -25,4 +35,6 @@ services:
                     - zookeeper
 networks:
      se_backend:
+        driver: bridge
+     se_frontend:
         driver: bridge

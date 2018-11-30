@@ -21,7 +21,7 @@ func reverseProxyRedirect(urls []*url.URL) *httputil.ReverseProxy {
 	} else {
 		fmt.Println("nginx request")
 		r.URL.Scheme = "http"
-		r.URL.Host = "localhost:9091"
+		r.URL.Host = "nginx"
 	}
 	}
 	return &httputil.ReverseProxy{Director: director}

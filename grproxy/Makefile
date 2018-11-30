@@ -1,5 +1,5 @@
-GOPATH := ${PWD}:${GOPATH}
-export GOPATH
+#GOPATH := ${PWD}:${GOPATH}
+#export GOPATH
 
 default: build
 
