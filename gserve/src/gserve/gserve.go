@@ -7,15 +7,44 @@ import (
 	"encoding/json"
 	"log"
 	"bytes"
-        "os"
+//"os"
+	"strings"
+	"time"
+	"github.com/samuel/go-zookeeper/zk"
 )
 
-
+var serverName string = "check"
+//var zookeeper string = "zookeeper"
 func main() {
+//	serverName = os.Getenv("servername")
+	serverName = "gserve1"
+	fmt.Printf("Server Name: %+v\n", serverName)
+	conn1 := connect()
+	fmt.Printf("Created zookeeper connection")
+	flags := int32(zk.FlagEphemeral)
+	acl := zk.WorldACL(zk.PermAll)
+	servers, err := conn1.Create("/grproxy/"+serverName, []byte("http://localhost:9092"), flags, acl)
+	must(err)
+	fmt.Printf("Created ephemeral node under grproxy: %+v\n", servers)
 	//handle requests with "/library" path
 	http.HandleFunc("/library", handlerForPath)
 	//serverport for this instance
-	log.Fatal(http.ListenAndServe(":9094", nil))
+	log.Fatal(http.ListenAndServe(":9092", nil))
+}
+
+func connect() *zk.Conn {
+        zksStr := "localhost:2181"
+	zks := strings.Split(zksStr, ",")
+	conn, _, err := zk.Connect(zks, time.Second)
+	must(err)
+	return conn
+}
+
+func must(err error) {
+	if err != nil {
+		//panic(err)
+		fmt.Printf("%+v From must \n", err)
+	}
 }
 
 func stringencoder(unencodedJSON []byte) string {
@@ -84,6 +113,5 @@ func handlerForPath(w http.ResponseWriter, r *http.Request) {
 	}
 	defer responsePost.Body.Close()
 	}
-        var serverName string = os.Getenv("servername")
         fmt.Fprintf(w, "proudly served by %s", serverName)
 }
