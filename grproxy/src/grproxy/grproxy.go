@@ -1,14 +1,15 @@
 package main
 
 import (
-        "net/http"
-        "net/http/httputil"
-        "fmt"
-        "net/url"
-        "log"
-        "math/rand"
+	"fmt"
+	"net/http"
+	"net/http/httputil"
+	//        "net/url"
+	"log"
+	//        "math/rand"
+//	"strings"
 	"time"
-	"strings"
+
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -17,6 +18,9 @@ var servers = []string{}
 var server string = ""
 var i int = 0
 
+//var urltotal = []*url.URL{}
+//var targetUrl = *url.URL{}
+
 func must(err error) {
 	if err != nil {
 		panic(err)
@@ -24,26 +28,30 @@ func must(err error) {
 }
 
 func connect() *zk.Conn {
-        zksStr := "localhost:2181"
-	zks := strings.Split(zksStr, ",")
-	conn, _, err := zk.Connect(zks, time.Second)
-	must(err)
+	conn, _, err := zk.Connect([]string{"zookeeper"}, time.Second)
+//	must(err)
+	if err != nil {
+	fmt.Printf("Error while connction, retrying")
+	time.Sleep(2 * time.Second)
+	connect()
+	}
 	return conn
 }
 
-/*func Balance() string {
-	server := urls[i]
-	i++
+//func connect() *zk.Conn {
+//	zksStr := "zookeeper:2181"
+//	zks := strings.Split(zksStr, ",")
+//	conn, _, err := zk.Connect(zks, time.Second)
+//	must(err)
+//	return conn
+//}
 
-	// it means that we reached the end of servers
-	// and we need to reset the counter and start
-	// from the beginning
-	if i >= len(urls) {
+func roundrobin() int {
+	if i >= (len(servers)) {
 		i = 0
 	}
-	return "hihello"+server
-}*/
-
+	return i
+}
 
 /*func Balance() string {
 	if len(urls) <= 0 {
@@ -66,7 +74,7 @@ func checkChildren() {
 	children, _, err := conn.Children("/grproxy")
 	must(err)
 	for _, name := range children {
-		data, _, err := conn.Get("/grproxy/"+name)
+		data, _, err := conn.Get("/grproxy/" + name)
 		must(err)
 		fmt.Printf("/grproxy/%s: %s\n", name, string(data))
 	}
@@ -83,19 +91,20 @@ func mirror(conn *zk.Conn, path string) (chan []string, chan error) {
 				errors <- err
 				return
 			}
-//			snapshots <- snapshot
-//			var s []string
 			checkServers = []string{}
-		for _, name := range children {
-// append works on nil slices.
-			data, _, err := conn.Get("/grproxy/"+name)
-			must(err)
-			
-//			fmt.Printf(string(data))
-			checkServers = append(checkServers, string(data))
-			fmt.Printf("childurl: %s\n", data)
+			for _, name := range children {
+				data, _, err := conn.Get("/grproxy/" + name)
+				must(err)
+
+				checkServers = append(checkServers, string(data))
+				fmt.Printf("childurl: %s\n", data)
+
 			}
 			servers = checkServers
+			for j, namecheck := range servers {
+				fmt.Printf("index", j)
+				fmt.Printf(namecheck)
+			}
 			fmt.Printf("total: %s\n", servers)
 			snapshots <- children
 			evt := <-events
@@ -108,21 +117,21 @@ func mirror(conn *zk.Conn, path string) (chan []string, chan error) {
 	return snapshots, errors
 }
 
-
-func reverseProxyRedirect(urls []*url.URL) *httputil.ReverseProxy {
-//handle requests with or without /library path separately
+func reverseProxyRedirect() *httputil.ReverseProxy {
+	//handle requests with or without /library path separately
 	director := func(r *http.Request) {
-	if r.URL.Path == "/library" {
-		fmt.Println("gserver request")
-		//handle gserve instances on a random basis
-		targetUrl := urls[rand.Int()%len(urls)]
-		r.URL.Scheme = targetUrl.Scheme
-		r.URL.Host = targetUrl.Host
-	} else {
-		fmt.Println("nginx request")
-		r.URL.Scheme = "http"
-		r.URL.Host = "nginx"
-	}
+		if r.URL.Path == "/library" {
+			fmt.Println("gserver request")
+			targetUrl := servers[roundrobin()]
+			fmt.Printf(servers[roundrobin()])
+			i++
+			r.URL.Scheme = "http"
+			r.URL.Host = targetUrl
+		} else {
+			fmt.Println("nginx request")
+			r.URL.Scheme = "http"
+			r.URL.Host = "nginx"
+		}
 	}
 	return &httputil.ReverseProxy{Director: director}
 }
@@ -131,43 +140,24 @@ func main() {
 
 	conn := connect()
 	defer conn.Close()
-//add if condition
-//	flags := int32(0)
-//	acl := zk.WorldACL(zk.PermAll)
+	//add if condition
+	flags := int32(0)
+	acl := zk.WorldACL(zk.PermAll)
+	for conn.State() != zk.StateHasSession {
+		fmt.Printf("loading Zookeeper ...\n")
+		time.Sleep(8 * time.Second)
+	}
+	checkifexists, st, errrrrr := conn.Exists("/grproxy")
+	must(errrrrr)
+	fmt.Printf("exists: %+v %+v\n", checkifexists, st)
 
-//	_, err := conn.Create("/grproxy", []byte("http://localhost:9090"), flags, acl)
-//	must(err)
-//	time.Sleep(5 * time.Second)
-//	checkChildren()	
+	if !checkifexists {
+		grproxy, err := conn.Create("/grproxy", []byte("grproxy:80"), flags, acl)
+		must(err)
+		fmt.Printf("created: %+v\n", grproxy)
+	}
 
 	snapshots, errors := mirror(conn, "/grproxy")
-/*	childchn, errors := mirror(conn, "/grproxy")
-	go func() {
-		for {
-			select {
-
-			case children := <-childchn:
-				fmt.Printf("%+v .....\n", children)
-				var temp []string
-				for _, child := range children {
-					gserve_urls, _, err := conn.Get("/grproxy/" + child)
-					fmt.Printf("childurl: %s\n", gserve_urls)
-					temp = append(temp, string(gserve_urls))
-					if err != nil {
-						fmt.Printf("from child: %+v\n", err)
-					}
-				}
-				urls = temp
-				fmt.Printf("total: %s\n", urls)
-				time.Sleep(5 * time.Second)
-				//fmt.Println(Balance())
-				fmt.Printf("%+v \n", urls)
-			case err := <-errors:
-				fmt.Printf("%+v routine error \n", err)
-			}
-		}
-	}()*/
-
 	go func() {
 		for {
 			select {
@@ -179,18 +169,8 @@ func main() {
 		}
 	}()
 
+	//call the reverseProxyRedirect function. Pass urls of active gserve instances (for now)
+	proxies := reverseProxyRedirect()
 
-		
-//call the reverseProxyRedirect function. Pass urls of active gserve instances (for now)
-        proxies := reverseProxyRedirect([]*url.URL{
-                {
-                        Scheme: "http",
-                        Host:   "localhost:9092",
-                },
-                {
-                        Scheme: "http",
-                        Host:   "localhost:9094",
-                },
-        })
-        log.Fatal(http.ListenAndServe(":9090", proxies))
+	log.Fatal(http.ListenAndServe(":9090", proxies))
 }
