@@ -117,7 +117,7 @@ func Split(s string) string {
 	return arr[1]
 }
 
-//SplitKey - splits the string on colon and gives the value
+//SplitKey - splits the string on colon and gives the column family
 func SplitKey(s string) string {
 	arr := strings.Split(s, ":")
 	return strings.Title(arr[0])
@@ -158,8 +158,9 @@ func handlerForPath(w http.ResponseWriter, r *http.Request) {
 	  <body>
 
 	    <div name="library">
+	    <h1>SE2 Library</h1>
 	      {{range .Row}}
-	              <h3>{{.Key}}</h3>
+	              <h2>{{.Key}}</h2>
 	                  {{range $index,$element := .Cell}}
 	                    <h4>{{SplitKey $element.Column}}</h4>
 	                    <div class="wrapper">
@@ -188,7 +189,7 @@ func handlerForPath(w http.ResponseWriter, r *http.Request) {
 	  .box {
 	    border-radius: 5px;
 	    padding: 20px;
-	    font-size: 150%;
+	    font-size: 100%;
 	  }
 	  </style>
 	</html>
