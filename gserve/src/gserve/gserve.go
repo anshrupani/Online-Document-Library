@@ -26,7 +26,7 @@ func registerToZookeeper(conn1 *zk.Conn)  {
 	acl := zk.WorldACL(zk.PermAll)
 
 	for conn1.State() != zk.StateHasSession {
-		fmt.Printf("loading Zookeeper ...\n")
+		fmt.Printf("establishing connection with zookeeper\n")
 		time.Sleep(2 * time.Second)
 	}
 	exists, _, _ := conn1.Exists("/grproxy")
@@ -34,11 +34,11 @@ func registerToZookeeper(conn1 *zk.Conn)  {
 		time.Sleep(2*time.Second)
 		registerToZookeeper(conn1)
 	} else {
-		fmt.Println("root node exists")
+		fmt.Println("root node existsm already")
 
 		servers, err := conn1.Create("/grproxy/"+serverName, []byte(serverName+":9094"), flags, acl)
 		must(err)
-		fmt.Printf("Created ephemeral node under grproxy: %+v\n", servers)
+		fmt.Printf("established an ephemeral child node under parent /grproxy: %+v\n", servers)
 	}
 
 
@@ -46,15 +46,18 @@ func registerToZookeeper(conn1 *zk.Conn)  {
 //var zookeeper string = "zookeeper"
 func main() {
 	serverName = os.Getenv("servername")
+	fmt.Printf("establishing connection with zookeeper in main method")
 	conn1 := connect()
 	registerToZookeeper(conn1)
 	//handle requests with "/library" path
+	fmt.Printf("handling path /library")
 	http.HandleFunc("/library", handlerForPath)
 	//serverport for this instance
 	log.Fatal(http.ListenAndServe(":9094", nil))
 }
 
 func connect() *zk.Conn {
+    fmt.Printf("establishing connection with zookeeper in connect method")
 	conn, _, err := zk.Connect([]string{"zookeeper"}, time.Second)
 //	must(err)
 	if err != nil {
@@ -98,6 +101,7 @@ func stringdecoder(encodedJSON []byte) []byte {
 }
 
 func getScanner() string {
+    fmt.Printf("implementation of the scanner as specified")
 	payload1 := strings.NewReader("<Scanner batch=\"10\"/>")
 	req1, _ := http.NewRequest(http.MethodPut, "http://"+"hbase"+":8080/se2:library/scanner", payload1)
 	req1.Header.Set("Content-Type", "text/xml")

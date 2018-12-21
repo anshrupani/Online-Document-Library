@@ -12,14 +12,10 @@ import (
 
 	"github.com/samuel/go-zookeeper/zk"
 )
-
 var checkServers []string
 var servers = []string{}
 var server string = ""
 var i int = 0
-
-//var urltotal = []*url.URL{}
-//var targetUrl = *url.URL{}
 
 func must(err error) {
 	if err != nil {
@@ -28,6 +24,7 @@ func must(err error) {
 }
 
 func connect() *zk.Conn {
+    fmt.Printf("Creating zookeeper connection, inside connect function")
 	conn, _, err := zk.Connect([]string{"zookeeper"}, time.Second)
 //	must(err)
 	if err != nil {
@@ -35,16 +32,9 @@ func connect() *zk.Conn {
 	time.Sleep(2 * time.Second)
 	connect()
 	}
+	fmt.Printf("Created zookeeper connection, inside connect function")
 	return conn
 }
-
-//func connect() *zk.Conn {
-//	zksStr := "zookeeper:2181"
-//	zks := strings.Split(zksStr, ",")
-//	conn, _, err := zk.Connect(zks, time.Second)
-//	must(err)
-//	return conn
-//}
 
 func roundrobin() int {
 	if i >= (len(servers)) {
@@ -68,6 +58,8 @@ func roundrobin() int {
 }*/
 func checkChildren() {
 
+
+    fmt.Printf("checking for children after zookeeper connection")
 	conn := connect()
 	defer conn.Close()
 
@@ -122,13 +114,16 @@ func reverseProxyRedirect() *httputil.ReverseProxy {
 	director := func(r *http.Request) {
 		if r.URL.Path == "/library" {
 			fmt.Println("gserver request")
+			fmt.Printf("calling roundrobin function for getting active gserve instances")
 			targetUrl := servers[roundrobin()]
 			fmt.Printf(servers[roundrobin()])
 			i++
+			fmt.Println("setting url scheme and host according to the obtained instance of gserve")
 			r.URL.Scheme = "http"
 			r.URL.Host = targetUrl
 		} else {
 			fmt.Println("nginx request")
+			fmt.Println("setting url scheme and host according to the nginx")
 			r.URL.Scheme = "http"
 			r.URL.Host = "nginx"
 		}
@@ -138,13 +133,14 @@ func reverseProxyRedirect() *httputil.ReverseProxy {
 
 func main() {
 
+    fmt.Println("initializing zookeeper connection in the main function")
 	conn := connect()
 	defer conn.Close()
 	//add if condition
 	flags := int32(0)
 	acl := zk.WorldACL(zk.PermAll)
 	for conn.State() != zk.StateHasSession {
-		fmt.Printf("loading Zookeeper ...\n")
+		fmt.Printf("waiting to establish connection with zookeeper in the main function")
 		time.Sleep(8 * time.Second)
 	}
 	checkifexists, st, errrrrr := conn.Exists("/grproxy")
@@ -169,8 +165,8 @@ func main() {
 		}
 	}()
 
+    fmt.Println("calling the reverse proxy to allot the active gserve instance obtained or nginx to the accessed port")
 	//call the reverseProxyRedirect function. Pass urls of active gserve instances (for now)
 	proxies := reverseProxyRedirect()
-
 	log.Fatal(http.ListenAndServe(":9090", proxies))
 }
